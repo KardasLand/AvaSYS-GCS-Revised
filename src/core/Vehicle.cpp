@@ -5,9 +5,9 @@
 #include "Vehicle.h"
 
 Vehicle::Vehicle(int vehicleId, DataSource dataSource, QObject *parent) : QObject{parent}, m_vehicleId(vehicleId), m_dataSource(dataSource),
-    m_systemId(0), m_teamId(0){
+    m_systemId(-1), m_teamId(-1){
     qRegisterMetaType<Vehicle>("Vehicle");
-    qRegisterMetaType<DataSource>("Vehicle::DataSource");
+    // qRegisterMetaType<DataSource>("Vehicle::DataSource");
     qRegisterMetaType<int32_t>("int32_t");
 }
 
@@ -44,7 +44,7 @@ double Vehicle::groundSpeed() const {
 }
 
 double Vehicle::heading() const {
-    return m_groundSpeed;
+    return m_heading;
 }
 
 double Vehicle::roll() const {
@@ -59,7 +59,16 @@ double Vehicle::batteryVoltage() const {
     return m_batteryVoltage;
 }
 
+double Vehicle::batteryRemaining() const {
+    return m_batteryRemaining;
+}
+
+double Vehicle::batteryCurrent() const {
+    return m_batteryCurrent;
+}
+
 bool Vehicle::isArmed() const {
+    // qDebug() << "Vehicle isArmed called, returning:" << m_isArmed;
     return m_isArmed;
 }
 
@@ -68,7 +77,13 @@ QString Vehicle::flightMode() const {
 }
 
 QString Vehicle::displayId() const {
-    return m_vehicleId == -1 ? QString() : QString::number(m_vehicleId);
+    if (m_dataSource == LocalMavlink) {
+        return QString::number(m_systemId);
+    }
+    if (m_dataSource == TeknofestAPI) {
+        return QString::number(m_teamId);
+    }
+    return QString::number(m_vehicleId);
 }
 
 QString Vehicle::altitudeString() const {
@@ -108,12 +123,20 @@ void Vehicle::setCoordinate(const QGeoCoordinate &coordinate) {
     if (m_coordinate == coordinate) {
         return;
     }
+    if (qIsNaN(coordinate.latitude()) || qIsNaN(coordinate.longitude())) {
+        // qWarning() << "Attempted to set coordinate with NaN values, ignoring.";
+        return;
+    }
     m_coordinate = coordinate;
     emit coordinateChanged();
 }
 
 void Vehicle::setAltitude(double altitude) {
     if (m_altitude == altitude) {
+        return;
+    }
+    if (qIsNaN(altitude)) {
+        // qWarning() << "Attempted to set altitude to NaN, ignoring.";
         return;
     }
     m_altitude = altitude;
@@ -124,12 +147,20 @@ void Vehicle::setGroundSpeed(double speed) {
     if (m_groundSpeed == speed) {
         return;
     }
+    if (qFuzzyCompare(m_groundSpeed, speed)) {
+        // qWarning() << "Attempted to set ground speed to a value that is too close to the current value, ignoring.";
+        return;
+    }
     m_groundSpeed = speed;
     emit groundSpeedChanged();
 }
 
 void Vehicle::setHeading(double heading) {
     if (m_heading == heading) {
+        return;
+    }
+    if (qFuzzyCompare(m_heading, heading)) {
+        // qWarning() << "Attempted to set heading to a value that is too close to the current value, ignoring.";
         return;
     }
     m_heading = heading;
@@ -140,12 +171,20 @@ void Vehicle::setRoll(double roll) {
     if (m_roll == roll) {
         return;
     }
+    if (qFuzzyCompare(m_roll, roll)) {
+        // qWarning() << "Attempted to set roll to a value that is too close to the current value, ignoring.";
+        return;
+    }
     m_roll = roll;
     emit rollChanged();
 }
 
 void Vehicle::setPitch(double pitch) {
     if (m_pitch == pitch) {
+        return;
+    }
+    if (qFuzzyCompare(m_pitch, pitch)) {
+        // qWarning() << "Attempted to set pitch to a value that is too close to the current value, ignoring.";
         return;
     }
     m_pitch = pitch;
@@ -156,11 +195,40 @@ void Vehicle::setBatteryVoltage(double voltage) {
     if (qFuzzyCompare(m_batteryVoltage, voltage)) {
         return;
     }
+    if (qIsNaN(voltage)) {
+        // qWarning() << "Attempted to set battery voltage to NaN, ignoring.";
+        return;
+    }
     m_batteryVoltage = voltage;
     emit batteryVoltageChanged();
 }
 
+void Vehicle::setBatteryRemaining(double remaining) {
+    if (qFuzzyCompare(m_batteryRemaining, remaining)) {
+        return;
+    }
+    if (qIsNaN(remaining)) {
+        // qWarning() << "Attempted to set battery remaining to NaN, ignoring.";
+        return;
+    }
+    m_batteryRemaining = remaining;
+    emit batteryRemainingChanged();
+}
+
+void Vehicle::setBatteryCurrent(double current) {
+    if (qFuzzyCompare(m_batteryCurrent, current)) {
+        return;
+    }
+    if (qIsNaN(current)) {
+        // qWarning() << "Attempted to set battery current to NaN, ignoring.";
+        return;
+    }
+    m_batteryCurrent = current;
+    emit batteryCurrentChanged();
+}
+
 void Vehicle::setIsArmed(bool armed) {
+    // qDebug() << "Vehicle setIsArmed called with:" << armed << ", current state:" << m_isArmed;
     if (m_isArmed == armed) {
         return;
     }

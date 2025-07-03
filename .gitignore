@@ -1,0 +1,10 @@
+/.env
+/cmake-build-debug
+/CMakeCache.txt
+/.qmlls.ini
+/.vscode
+
+# Qt Creator specific files
+*.user
+*.pro.user
+*.txt.user

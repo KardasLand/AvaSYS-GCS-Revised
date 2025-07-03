@@ -6,8 +6,9 @@
 #include <qobject.h>
 #include <qtmetamacros.h>
 #include <QGeoCoordinate>
+#include <QQmlEngine> // <-- Include for QML_ELEMENT
 
-
+QML_ELEMENT
 class Vehicle : public QObject{
     Q_OBJECT
     Q_PROPERTY(int vehicleId READ vehicleId CONSTANT)
@@ -23,6 +24,8 @@ class Vehicle : public QObject{
     Q_PROPERTY(double roll READ roll NOTIFY rollChanged)
     Q_PROPERTY(double pitch READ pitch NOTIFY pitchChanged)
     Q_PROPERTY(double batteryVoltage READ batteryVoltage NOTIFY batteryVoltageChanged)
+    Q_PROPERTY(double batteryRemaining READ batteryRemaining NOTIFY batteryRemainingChanged)
+    Q_PROPERTY(double batteryCurrent READ batteryCurrent NOTIFY batteryCurrentChanged)
     Q_PROPERTY(bool isArmed READ isArmed NOTIFY isArmedChanged)
     Q_PROPERTY(QString flightMode READ flightMode NOTIFY flightModeChanged)
 
@@ -42,15 +45,20 @@ public:
     DataSource dataSource() const;
     int systemId() const;
     int teamId() const;
-    bool isSelected() const;
+    Q_INVOKABLE bool isSelected() const;
     QGeoCoordinate coordinate() const;
     double altitude() const;
 
-    double groundSpeed() const;
+    Q_INVOKABLE double groundSpeed() const;
     double heading() const;
     double roll() const;
     double pitch() const;
+
     double batteryVoltage() const;
+    double batteryRemaining() const;
+    double batteryCurrent() const;
+
+
     bool isArmed() const;
     QString flightMode() const;
     QString displayId() const;
@@ -68,6 +76,8 @@ public slots:
     void setRoll(double roll);
     void setPitch(double pitch);
     void setBatteryVoltage(double voltage);
+    void setBatteryRemaining(double remaining);
+    void setBatteryCurrent(double current);
     void setIsArmed(bool armed);
     void setFlightMode(const QString& mode);
 signals:
@@ -81,6 +91,8 @@ signals:
     void rollChanged();
     void pitchChanged();
     void batteryVoltageChanged();
+    void batteryRemainingChanged();
+    void batteryCurrentChanged();
     void isArmedChanged();
     void flightModeChanged();
     void displayIdChanged();
@@ -99,6 +111,8 @@ private:
     double m_roll = 0.0;
     double m_pitch = 0.0;
     double m_batteryVoltage = 0.0;
+    double m_batteryRemaining = 0.0; // Percentage from 0 to 100
+    double m_batteryCurrent = 0.0; // Current in Amperes, if available
     bool m_isArmed = false;
     QString m_flightMode = "Unknown";
 };

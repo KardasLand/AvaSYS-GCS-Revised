@@ -23,7 +23,8 @@ public:
     VehicleManager* vehicleManager() const;
     MavlinkManager* mavlinkManager() const;
     TeknofestClient* teknofestClient() const;
-
+    void initializeMavlink();
+    void initializeTeknofestServer();
 
 private:
     explicit AppContext(QObject* parent = nullptr);

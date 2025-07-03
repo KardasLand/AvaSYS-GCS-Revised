@@ -1,4 +1,3 @@
-// file: ui/Main.qml
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -23,35 +22,18 @@ ApplicationWindow {
         }
     }
 
-    // Main layout with map and side panels
-    RowLayout {
+    Item {
         anchors.fill: parent
-
-        // Main Map and Info Display
-        RightPanel {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+        MainPanel {
+            anchors.fill: parent
+        }
+        BottomPanel {
+            id: bottomPanel1
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
         }
     }
-
-    // A drawer for connection settings
-    // ConnectionDrawer {
-    //     id: connectionDrawer
-    // }
-
-    // // Bottom telemetry bar
-    // BottomPanel {
-    //     anchors.left: parent.left
-    //     anchors.right: parent.right
-    //     anchors.bottom: parent.bottom
-    // }
-
-    // Button to open the connection drawer
-    // Button {
-    //     anchors.top: parent.top
-    //     anchors.right: parent.right
-    //     anchors.margins: 10
-    //     text: "Connect"
-    //     onClicked: connectionDrawer.open()
-    // }
 }

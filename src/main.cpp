@@ -1,5 +1,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QFileInfo>
+#include <QDir>
+#include <QQmlContext>
 
 #include "core/AppContext.h"
 #include "managers/MavlinkManager.h"
@@ -11,12 +14,15 @@ int main(int argc, char *argv[])
     const QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("THUNDERFOREST_API_KEY", qgetenv("THUNDERFOREST_API_KEY"));
+    engine.rootContext()->setContextProperty("TEKNOFEST_API_URL", qgetenv("TEKNOFEST_API_URL"));
 
-    qmlRegisterSingletonInstance<AppContext>("App.Context", 1, 0, "AppContext", AppContext::instance());
+    AppContext* appContext = AppContext::instance();
+
+    qmlRegisterSingletonInstance<AppContext>("App.Context", 1, 0, "AppContext", appContext);
     qmlRegisterUncreatableType<VehicleManager>("App.Managers", 1, 0, "VehicleManager", "Cannot create VehicleManager in QML");
     qmlRegisterUncreatableType<MavlinkManager>("App.Managers", 1, 0, "MavlinkManager", "Cannot create MavlinkManager in QML");
     qmlRegisterUncreatableType<TeknofestClient>("App.Managers", 1, 0, "TeknofestClient", "Cannot create TeknofestClient in QML");
-    qmlRegisterType<Vehicle>("App.Models", 1, 0, "Vehicle");
 
     QObject::connect(
         &engine,
@@ -25,6 +31,9 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.loadFromModule("AvaSYS2", "Main");
+    appContext->initializeMavlink();
+    appContext->initializeTeknofestServer();
+
 
     return QGuiApplication::exec();
 }
