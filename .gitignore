@@ -3,8 +3,10 @@
 /CMakeCache.txt
 /.qmlls.ini
 /.vscode
+/.idea
 
 # Qt Creator specific files
 *.user
 *.pro.user
 *.txt.user
+CMakeLists.txt.user
