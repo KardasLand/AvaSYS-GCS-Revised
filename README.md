@@ -341,6 +341,8 @@ Build  from the source and intsall dependencies:
 
 Run the project with:
 ```sh
+export THUNDERFOREST_API_KEY=<your_api_key>
+export TEKNOFEST_API_URL=<your_api_url>
 ./cmake-build-debug/appAvaSYS2
 ```
 
