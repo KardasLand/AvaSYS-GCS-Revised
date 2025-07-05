@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import QtQuick.Controls.FluentWinUI3
 
 import App.Context 1.0
 
@@ -12,6 +12,8 @@ Rectangle {
     anchors.left: parent.left
     anchors.right: parent.right
 
+
+    //todo refactor this shit
 
     property var vehicle: AppContext.vehicleManager.mainVehicle
 
@@ -68,7 +70,33 @@ Rectangle {
             Loader { sourceComponent: dataRow; property string title: "Longitude"; property string value: mockLongitude.toFixed(6) + "°" }
             Loader { sourceComponent: dataRow; property string title: "Altitude"; property string value: mockAltitude.toFixed(2) + " m" }
         }
+        Item { Layout.fillWidth: true }
 
+        ColumnLayout {
+            // series of buttons to control the vehicle, toggle the visibility of components etc..
+            Layout.alignment: Qt.AlignVCenter; spacing: 5
+            Button {
+                text: "Takeoff"
+                Layout.preferredWidth: 150
+                onClicked: {
+                    console.log("Takeoff button clicked");
+                }
+            }
+            Button {
+                text: "Takeoff"
+                Layout.preferredWidth: 150
+                onClicked: {
+                    console.log("Takeoff button clicked");
+                }
+            }
+            Button {
+                text: "Takeoff"
+                Layout.preferredWidth: 150
+                onClicked: {
+                    console.log("Takeoff button clicked");
+                }
+            }
+        }
         Item { Layout.fillWidth: true }
 
         Rectangle {
@@ -107,6 +135,36 @@ Rectangle {
             }
         }
 
+        Item { Layout.fillWidth: true }
+        ColumnLayout {
+            // series of buttons to control the vehicle, toggle the visibility of components etc..
+            Layout.alignment: Qt.AlignVCenter; spacing: 5
+            Button {
+                text: "Toggle PFD"
+                Layout.preferredWidth: 150
+                background: Rectangle {
+                    color: horizonPanel.visible ? "#4CAF50" : "#F44336"
+                    radius: 5
+                }
+                onClicked: {
+                    horizonPanel.visible = !horizonPanel.visible;
+                }
+            }
+            Button {
+                text: "TCP Connect"
+                Layout.preferredWidth: 150
+                onClicked: {
+                    console.log("Takeoff button clicked");
+                }
+            }
+            Button {
+                text: "Teknofest Missions"
+                Layout.preferredWidth: 160
+                onClicked: {
+                    console.log("Takeoff button clicked");
+                }
+            }
+        }
         Item { Layout.fillWidth: true }
 
         ColumnLayout {

@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Qml Quick Network SerialPort Positioning Location)
+find_package(Qt6 REQUIRED COMPONENTS Qml Quick Network SerialPort Positioning Location Gui)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GStreamer REQUIRED gstreamer-1.0 gstreamer-video-1.0)
 pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
@@ -35,6 +35,10 @@ qt_add_executable(appAvaSYS2
         src/network/HttpClient.h
         src/core/VideoItem.cpp
         src/core/VideoItem.h
+        src/horizon/linearindicator.cpp
+        src/horizon/linearindicator.h
+        src/horizon/painterhelpers.cpp
+        src/horizon/painterhelpers.h
 )
 
 qt_add_qml_module(appAvaSYS2
@@ -46,6 +50,10 @@ qt_add_qml_module(appAvaSYS2
         ui/panels/BottomPanel.qml
         ui/components/StyledGauge.qml
         ui/components/CompassGauge.qml
+        ui/settings/SettingsWindow.qml
+        ui/horizon/ArtificialHorizon.qml
+        ui/horizon/HorizonPanel.qml
+        ui/horizon/TickMark.qml
     SOURCES
         src/core/Vehicle.h src/core/Vehicle.cpp
     RESOURCES
@@ -75,6 +83,7 @@ target_link_libraries(appAvaSYS2
     PRIVATE Qt6::Network
     PRIVATE Qt6::Location
     PRIVATE Qt6::Qml
+    PRIVATE Qt6::Gui
     PRIVATE OpenSSL::SSL
     PRIVATE OpenSSL::Crypto
     PRIVATE MAVLink::mavlink

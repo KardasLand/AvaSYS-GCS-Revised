@@ -10,6 +10,17 @@ Rectangle {
     color: "black"
 
     property var vehicleModel: AppContext.vehicleManager.vehicles
+    property var mainVehicle: null
+
+    Timer {
+        interval: 200; running: true; repeat: true
+        onTriggered: {
+            // This polling pattern is robust if the mainVehicle can appear/disappear
+            if (root.mainVehicle !== AppContext.vehicleManager.mainVehicle) {
+                root.mainVehicle = AppContext.vehicleManager.mainVehicle;
+            }
+        }
+    }
 
     // Map component is declared first, so it's at the back
     MapView {
@@ -89,6 +100,7 @@ Rectangle {
     // --- SANITY CHECK: A regular ListView ---
     ListView {
         id: listView
+        visible: false
         width: 250
         height: 40
         anchors.left: parent.left

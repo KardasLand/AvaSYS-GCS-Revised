@@ -70,12 +70,44 @@ public:
 
     };
 
-    void setServerProperties(const TeknofestServerProperties &serverProperties) {
-        m_serverProperties = serverProperties;
+    [[nodiscard]] TeknofestServerProperties getServerProperties() {
+        return m_serverProperties;
     }
 
-    [[nodiscard]] TeknofestServerProperties getServerProperties() const {
-        return m_serverProperties;
+    Q_INVOKABLE QString getTeknofestServerProperty_url() const {
+        return m_serverProperties.url;
+    }
+    Q_INVOKABLE QString getTeknofestServerProperty_takimid() const {
+        return m_serverProperties.takimid;
+    }
+    Q_INVOKABLE QByteArray getTeknofestServerProperty_session_id() const {
+        return m_serverProperties.session_id;
+    }
+    Q_INVOKABLE QString getTeknofestAuthProperty_username() const {
+        return m_serverProperties.teknofestAuthProperty.username;
+    }
+    Q_INVOKABLE QString getTeknofestAuthProperty_password() const {
+        return m_serverProperties.teknofestAuthProperty.password;
+    }
+    Q_INVOKABLE double getTeknofestQRCodeProperty_latitude() const {
+        return m_serverProperties.teknofestQRCodeProperty.qrLatitude;
+    }
+    Q_INVOKABLE double getTeknofestQRCodeProperty_longitude() const {
+        return m_serverProperties.teknofestQRCodeProperty.qrLongitude;
+    }
+    Q_INVOKABLE QString getUrl() const {
+        return m_serverProperties.url;
+    }
+    Q_INVOKABLE QString getTakimid() const {
+        return m_serverProperties.takimid;
+    }
+    Q_INVOKABLE QByteArray getSessionId() const {
+        return m_serverProperties.session_id;
+    }
+
+
+    void setServerProperties(const TeknofestServerProperties &serverProperties) {
+        m_serverProperties = serverProperties;
     }
 
     explicit TeknofestClient(QObject *parent = nullptr);

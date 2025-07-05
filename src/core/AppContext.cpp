@@ -21,7 +21,7 @@ TeknofestClient * AppContext::teknofestClient() const {
     return m_teknofestClient;
 }
 
-void AppContext::initializeMavlink() {
+void AppContext::autoConnectMavlink() {
     // start a mavlink connection
     m_mavlinkManager->connectUdp("127.0.1", 14550);
 }
@@ -39,8 +39,6 @@ void AppContext::initializeTeknofestServer() {
     serverProperties.set_teknofest_qr_code_property(qrCodeProperty);
     serverProperties.set_url(getenv("TEKNOFEST_API_URL"));
     // serverProperties.set_takimid("123"); // Replace with actual team ID
-    serverProperties.set_teknofest_auth_property(authProperty);
-    serverProperties.set_teknofest_qr_code_property(qrCodeProperty);
     m_teknofestClient->setServerProperties(serverProperties);
     m_teknofestClient->login();
 }
