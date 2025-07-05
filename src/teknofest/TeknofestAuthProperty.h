@@ -14,14 +14,14 @@ public:
     explicit TeknofestAuthProperty(QObject* parent = nullptr) : QObject(parent), m_username(""), m_password("") {}
 
     QString getUsername() { return m_username; }
-    void setUsername(QString& username) {
+    Q_INVOKABLE void setUsername(QString username) {
         if (m_username == username) return; // No change
         m_username = username;
         emit usernameChanged(username);
     }
 
     QString getPassword() { return m_password; }
-    void setPassword(QString& password) {
+    Q_INVOKABLE void setPassword(QString password) {
         if (m_password == password) return; // No change
         m_password = password;
         emit passwordChanged(password);

@@ -156,12 +156,10 @@ Rectangle {
                 text: "Toggle HSS"
                 Layout.preferredWidth: 150
                 background: Rectangle {
-                    // CHANGE THIS to use the new property
                     color: bottomPanel.isHssVisible ? "#4CAF50" : "#F44336"
                     radius: 5
                 }
                 onClicked: {
-                    // CHANGE THIS to emit the signal
                     bottomPanel.toggleHss()
                 }
             }
@@ -169,12 +167,10 @@ Rectangle {
                 text: "Toggle Camera"
                 Layout.preferredWidth: 150
                 background: Rectangle {
-                    // CHANGE THIS to use the new property
                     color: bottomPanel.isHssVisible ? "#4CAF50" : "#F44336"
                     radius: 5
                 }
                 onClicked: {
-                    // CHANGE THIS to emit the signal
                     bottomPanel.toggleHss()
                 }
             }

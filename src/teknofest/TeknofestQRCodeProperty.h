@@ -16,13 +16,13 @@ public:
     double qrLatitude() { return m_qrLatitude; }
     double qrLongitude() { return m_qrLongitude; }
 
-    void setQrLatitude(double latitude) {
+    Q_INVOKABLE void setQrLatitude(double latitude) {
         if (m_qrLatitude == latitude) return; // No change
         m_qrLatitude = latitude;
         emit qrLatitudeChanged(latitude);
     }
 
-    void setQrLongitude(double longitude) {
+    Q_INVOKABLE void setQrLongitude(double longitude) {
         if (m_qrLongitude == longitude) return; // No change
         m_qrLongitude = longitude;
         emit qrLongitudeChanged(longitude);

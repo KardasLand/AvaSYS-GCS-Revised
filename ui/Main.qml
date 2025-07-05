@@ -73,7 +73,7 @@ ApplicationWindow {
             RowLayout {
                 spacing: 5
                 Rectangle {
-                    color: root.vehicle.isArmed ? "#4CAF50" : "#F44336"
+                    color: root.vehicle.isArmed ? "#4CAF50" : "#F44336" || "#A0A0A0"
                     width: 20; height: 20; radius: 10;
                     Layout.alignment: Qt.AlignVCenter
                 }

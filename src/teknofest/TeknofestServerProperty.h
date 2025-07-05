@@ -39,7 +39,7 @@ public:
     }
 
     QString getUrl() const { return url; }
-    void setUrl(const QString &url) {
+    Q_INVOKABLE void setUrl(const QString &url) {
         if (this->url == url) return; // No change
         this->url = url;
         emit urlChanged();

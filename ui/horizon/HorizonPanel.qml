@@ -23,8 +23,8 @@ BorderImage {
 
     Component.onCompleted: {
         // Initialize the mainVehicle property
-        console.log("height:", a, "width:", width);
-        console.log(mainPanel.height, bottomPanel1.height);
+        //console.log("height:", a, "width:", width);
+        //console.log(mainPanel.height, bottomPanel1.height);
     }
 
 

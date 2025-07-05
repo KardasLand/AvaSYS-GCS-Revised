@@ -18,25 +18,28 @@ ApplicationWindow {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://" + url; // Default to HTTPS if no protocol is specified
         }
-        AppContext.setTeknofestServerSettings(url);
+
 
         // todo save settings
-        AppContext.setTeknofestAuth(
-            usernameField.text,
-            passwordField.text,
-        );
+        teknofestClient.serverProperties.teknofestAuthProperty.setUsername(usernameField.text);
+        teknofestClient.serverProperties.teknofestAuthProperty.setPassword(passwordField.text);
+        teknofestClient.serverProperties.setUrl(url);
 
         if (enableQrCodeCheckBox.checked) {
-            // conver text to double
-            AppContext.setTeknofestQRCode(
-                parseFloat(qrCodeLatitudeField.text),
-                parseFloat(qrCodeLongitudeField.text)
-            );
+            // convert text to double
+            // AppContext.setTeknofestQRCode(
+            //     parseFloat(qrCodeLatitudeField.text),
+            //     parseFloat(qrCodeLongitudeField.text)
+            // );
+            teknofestClient.serverProperties.teknofestQRCodeProperty.setQrLatitude(parseFloat(qrCodeLatitudeField.text));
+            teknofestClient.serverProperties.teknofestQRCodeProperty.setQrLongitude(parseFloat(qrCodeLongitudeField.text));
         } else {
-            AppContext.setTeknofestQRCode(-1,-1); // Disable QR Code
+            // Disable QR Code by setting latitude and longitude to -1
+            teknofestClient.serverProperties.teknofestQRCodeProperty.setQrLatitude(-1);
+            teknofestClient.serverProperties.teknofestQRCodeProperty.setQrLongitude(-1);
         }
         var mavlinkUrl = mavlinkUrlField.text.trim().split(':');
-        console.log("M123AVLink URL:", mavlinkUrl[0], mavlinkUrl[1]);
+        console.log("MAVLink URL:", mavlinkUrl[0], mavlinkUrl[1]);
         AppContext.mavlinkManager.setMavlinkSettings(
             mavlinkUrl[0], // Protocol (e.g., "udp")
             parseInt(mavlinkUrl[1]) // Port (e.g., "14550")
@@ -86,7 +89,7 @@ ApplicationWindow {
                 }
             }
             Button {
-                text: "Save & Close"
+                text: qsTr("Save Settings")
                 onClicked: {
                     saveSettings();
                     settingsWindow.close();
@@ -132,7 +135,7 @@ ApplicationWindow {
                 TextField {
                     id: usernameField
                     placeholderText: qsTr("Username")
-                    text: settingsWindow.teknofestClient.getTeknofestAuthProperty_username()
+                    text: settingsWindow.teknofestClient.serverProperties.teknofestAuthProperty.username || "" // Placeholder for username
                     Layout.fillWidth: true
                 }
                 Label {
@@ -144,7 +147,7 @@ ApplicationWindow {
                     id: passwordField
                     placeholderText: qsTr("Password")
                     echoMode: TextInput.Password
-                    text: settingsWindow.teknofestClient.getTeknofestAuthProperty_password()
+                    text: settingsWindow.teknofestClient.serverProperties.teknofestAuthProperty.password || "" // Placeholder for password
                     Layout.fillWidth: true
                 }
                 Label {
@@ -155,7 +158,7 @@ ApplicationWindow {
                 TextField {
                     id: serverUrlField
                     placeholderText: qsTr("Server URL")
-                    text: settingsWindow.teknofestClient.getUrl() || "https://teknofest.neostellar.com" // Placeholder for server URL
+                    text: settingsWindow.teknofestClient.serverProperties.url || "https://teknofest.neostellar.net" // Placeholder for server URL
                     Layout.fillWidth: true
                 }
             }
@@ -209,7 +212,7 @@ ApplicationWindow {
                 CheckBox {
                     id: enableQrCodeCheckBox
                     text: qsTr("Enable QR Code")
-                    checked: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_latitude() !== -1 && settingsWindow.teknofestClient.getTeknofestQRCodeProperty_longitude() !== -1
+                    checked: settingsWindow.teknofestClient.serverProperties.teknofestQRCodeProperty.qrLatitude !== -1 && settingsWindow.teknofestClient.serverProperties.teknofestQRCodeProperty.qrLongitude !== -1
                     // enabled: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_latitude() !== -1
                 }
                 Label {
@@ -220,7 +223,7 @@ ApplicationWindow {
                 TextField {
                     id: qrCodeLatitudeField
                     placeholderText: qsTr("QR Code Latitude")
-                    text: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_latitude() || "0.0" // Placeholder for latitude
+                    text: settingsWindow.teknofestClient.serverProperties.teknofestQRCodeProperty.qrLatitude || "0.0" // Placeholder for latitude
                     Layout.fillWidth: true
                     enabled: enableQrCodeCheckBox.checked
                 }
@@ -232,7 +235,7 @@ ApplicationWindow {
                 TextField {
                     id: qrCodeLongitudeField
                     placeholderText: qsTr("QR Code Longitude")
-                    text: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_longitude() || "0.0" // Placeholder for longitude
+                    text: settingsWindow.teknofestClient.serverProperties.teknofestQRCodeProperty.qrLongitude || "0.0" // Placeholder for longitude
                     Layout.fillWidth: true
                     enabled: enableQrCodeCheckBox.checked
                 }
@@ -244,7 +247,7 @@ ApplicationWindow {
                 font.pixelSize: 14
             }
             Text {
-                text: qsTr("AvaSYS GCS 2.0\nVersion 1.0\n© 2023 AvaSYS Team")
+                text: qsTr("AvaSYS GCS Revised\nVersion 2.0\n© 2025 Neo Stellar")
                 color: "#A0A0A0"
                 font.pixelSize: 12
                 wrapMode: Text.Wrap
