@@ -11,118 +11,66 @@
 #include <QTimer>
 
 #include "src/network/HttpClient.h"
+#include "src/teknofest/TeknofestHSSProperty.h"
+#include "src/teknofest/TeknofestServerProperty.h"
 
 class TeknofestClient : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool loggedIn READ isLoggedIn WRITE setLoggedIn NOTIFY loggedInChanged)
+    Q_PROPERTY(QString statusString READ statusString WRITE setStatusString NOTIFY statusStringChanged)
+    Q_PROPERTY(TeknofestServerProperties* serverProperties READ getServerProperties WRITE setServerProperties NOTIFY serverPropertiesChanged)
 
 public:
 
-    struct TeknofestAuthProperty {
-        QString username;
-        QString password;
-    };
+    Q_INVOKABLE bool isLoggedIn() const {
+        return m_loggedIn;
+    }
 
-    struct TeknofestQRCodeProperty {
-        double qrLatitude;
-        double qrLongitude;
+    void setLoggedIn(bool loggedIn) {
+        if (m_loggedIn == loggedIn) return; // No change
+        m_loggedIn = loggedIn;
+        emit loggedInChanged();
+    }
 
-        [[nodiscard]] double qr_latitude() const {
-            return qrLatitude;
-        }
-
-        [[nodiscard]] double qr_longitude() const {
-            return qrLongitude;
-        }
-    };
-
-    struct TeknofestServerProperties {
-        TeknofestAuthProperty teknofestAuthProperty;
-        TeknofestQRCodeProperty teknofestQRCodeProperty;
-        QString url;
-        QString takimid;
-        QByteArray session_id;
-        std::vector<int> planeIds; // List of team IDs
-        void set_teknofest_auth_property(const TeknofestAuthProperty &teknofest_auth_property) {
-            teknofestAuthProperty = teknofest_auth_property;
-        }
-
-        void set_teknofest_qr_code_property(const TeknofestQRCodeProperty &teknofest_qr_code_property) {
-            teknofestQRCodeProperty = teknofest_qr_code_property;
-        }
-
-        void set_url(const QString &url) {
-            this->url = url;
-        }
-
-        void set_takimid(const QString &takimid) {
-            this->takimid = takimid;
-        }
-
-        void set_session_id(const QByteArray &session_id) {
-            this->session_id = session_id;
-        }
-
-        void set_plane_ids(const std::vector<int> &plane_ids) {
-            planeIds = plane_ids;
-        }
-
-
-    };
-
-    [[nodiscard]] TeknofestServerProperties getServerProperties() {
+    TeknofestServerProperties* getServerProperties() const {
         return m_serverProperties;
     }
 
-    Q_INVOKABLE QString getTeknofestServerProperty_url() const {
-        return m_serverProperties.url;
-    }
-    Q_INVOKABLE QString getTeknofestServerProperty_takimid() const {
-        return m_serverProperties.takimid;
-    }
-    Q_INVOKABLE QByteArray getTeknofestServerProperty_session_id() const {
-        return m_serverProperties.session_id;
-    }
-    Q_INVOKABLE QString getTeknofestAuthProperty_username() const {
-        return m_serverProperties.teknofestAuthProperty.username;
-    }
-    Q_INVOKABLE QString getTeknofestAuthProperty_password() const {
-        return m_serverProperties.teknofestAuthProperty.password;
-    }
-    Q_INVOKABLE double getTeknofestQRCodeProperty_latitude() const {
-        return m_serverProperties.teknofestQRCodeProperty.qrLatitude;
-    }
-    Q_INVOKABLE double getTeknofestQRCodeProperty_longitude() const {
-        return m_serverProperties.teknofestQRCodeProperty.qrLongitude;
-    }
-    Q_INVOKABLE QString getUrl() const {
-        return m_serverProperties.url;
-    }
-    Q_INVOKABLE QString getTakimid() const {
-        return m_serverProperties.takimid;
-    }
-    Q_INVOKABLE QByteArray getSessionId() const {
-        return m_serverProperties.session_id;
-    }
-
-
-    void setServerProperties(const TeknofestServerProperties &serverProperties) {
+    void setServerProperties(TeknofestServerProperties* serverProperties) {
+        if (m_serverProperties == serverProperties) return; // No change
         m_serverProperties = serverProperties;
+        emit serverPropertiesChanged();
     }
 
+    Q_INVOKABLE QString statusString() const {
+        return m_statusString;
+    }
+    void setStatusString(const QString &statusString) {
+        if (m_statusString == statusString) return; // No change
+        m_statusString = statusString;
+        emit statusStringChanged();
+    }
+    Q_INVOKABLE void disconnectFromServer();
     explicit TeknofestClient(QObject *parent = nullptr);
 
 public slots:
     Q_INVOKABLE void login() const;
+
     Q_INVOKABLE void startFetchingTelemetry();
     Q_INVOKABLE void stopFetchingTelemetry();
+    void statusChanged(const QString& status);
     void transmitTelemetryRequest(QJsonObject &vehicleData);
-
-    signals:
-        void loginSucceeded(int teamid);
-        void loginFailed(const QString& error);
-        // This signal is connected to the VehicleManager
-        void telemetryReceived(const QJsonArray &vehicleData);
+    void hssResponseReceived(const QByteArray& responseData, const QString& errorString);
+    void hssCoordinateRequest();
+signals:
+    void loginSucceeded(int teamid);
+    void loginFailed(const QString& error);
+    void loggedInChanged();
+    void statusStringChanged();
+    void serverPropertiesChanged();
+    // This signal is connected to the VehicleManager
+    void telemetryReceived(const QJsonArray &vehicleData);
 
 private slots:
     void fetchTelemetry();
@@ -134,7 +82,9 @@ private:
     QTimer* m_telemetryTimer = nullptr;
     QString m_apiUrl;
     QByteArray m_sessionId;
-    TeknofestServerProperties m_serverProperties;
+    bool m_loggedIn = false;
+    QString m_statusString;
+    TeknofestServerProperties* m_serverProperties;
     HttpClient* m_httpClient;
 };
 

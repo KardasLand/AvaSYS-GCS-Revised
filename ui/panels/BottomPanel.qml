@@ -16,6 +16,8 @@ Rectangle {
     //todo refactor this shit
 
     property var vehicle: AppContext.vehicleManager.mainVehicle
+    property bool isHssVisible: false
+    signal toggleHss()
 
     // --- Mock Data Properties - Initialized to match the new image ---
     property real mockLatitude: 37.523051
@@ -151,17 +153,29 @@ Rectangle {
                 }
             }
             Button {
-                text: "TCP Connect"
+                text: "Toggle HSS"
                 Layout.preferredWidth: 150
+                background: Rectangle {
+                    // CHANGE THIS to use the new property
+                    color: bottomPanel.isHssVisible ? "#4CAF50" : "#F44336"
+                    radius: 5
+                }
                 onClicked: {
-                    console.log("Takeoff button clicked");
+                    // CHANGE THIS to emit the signal
+                    bottomPanel.toggleHss()
                 }
             }
             Button {
-                text: "Teknofest Missions"
-                Layout.preferredWidth: 160
+                text: "Toggle Camera"
+                Layout.preferredWidth: 150
+                background: Rectangle {
+                    // CHANGE THIS to use the new property
+                    color: bottomPanel.isHssVisible ? "#4CAF50" : "#F44336"
+                    radius: 5
+                }
                 onClicked: {
-                    console.log("Takeoff button clicked");
+                    // CHANGE THIS to emit the signal
+                    bottomPanel.toggleHss()
                 }
             }
         }

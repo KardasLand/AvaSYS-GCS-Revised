@@ -153,6 +153,8 @@ void VehicleManager::updateTeknofestVehicles(const QJsonArray &vehicleData) {
     }
 }
 
+
+
 void VehicleManager::startTransmittingTelemetry(int teamid) {
     qDebug() << "Starting telemetry transmission timer";
     m_telemetryTimer = new QTimer(this);
@@ -167,7 +169,9 @@ void VehicleManager::startTransmittingTelemetry(int teamid) {
         qWarning() << "No MAVLink vehicle found to transmit telemetry.";
         return;
     }
+    qDebug() << "Setting team ID for first MAVLink vehicle:" << firstMavlinkVehicle->vehicleId() << "to" << teamid;
     firstMavlinkVehicle->setTeamId(teamid);
+    emit vehiclesChanged();
     connect(m_telemetryTimer, &QTimer::timeout, this, [this]() {
 
         // get first mavlink vehicle data.
@@ -223,8 +227,21 @@ void VehicleManager::startTransmittingTelemetry(int teamid) {
         vehicleData["gps_saati"] = gpsTimeObj;
         // Emit the signal to transmit telemetry data
         emit transmitTelemetryRequest(vehicleData);
+        emit hssCoordinateRequest();
+
     });
     m_telemetryTimer->start(1000); // Transmit every 5 seconds
+}
+
+void VehicleManager::stopTransmittingTelemetry() {
+    qDebug() << "Stopping telemetry transmission timer";
+    if (m_telemetryTimer) {
+        disconnect(m_telemetryTimer, &QTimer::timeout, this, nullptr);
+        m_telemetryTimer->stop();
+        m_telemetryTimer->deleteLater();
+        m_telemetryTimer = nullptr;
+    }
+    emit vehiclesChanged(); // Notify QML that the list has changed
 }
 
 void VehicleManager::selectVehicle(int vehicleId) {
@@ -239,7 +256,12 @@ void VehicleManager::selectVehicle(int vehicleId) {
     qDebug() << "Selecting vehicle with ID:" << vehicleId
              << "Found:" << (vehicleToSelect ? "Yes" : "No");
     if (m_selectedVehicle == vehicleToSelect) {
-        return; // No change needed
+        // toggle selection if the same vehicle is selected again
+        qDebug() << "Vehicle with ID:" << vehicleId << "is already selected, toggling selection off.";
+        vehicleToSelect->setIsSelected(false);
+        m_selectedVehicle = nullptr; // Deselect the vehicle
+        emit selectedVehicleChanged(); // Notify QML that the selection has changed
+        return; // No need to continue if we just deselected the same vehicle
     }
 
     // Deselect the previously selected vehicle, if there was one.
@@ -258,6 +280,25 @@ void VehicleManager::selectVehicle(int vehicleId) {
 
     emit vehiclesChanged(); // Notify QML that the list has changed
     emit selectedVehicleChanged();
+}
+
+void VehicleManager::clearTeknofestVehicles() {
+    qDebug() << "Clearing all Teknofest vehicles";
+    QList<int> teamIds = m_teknofestIdToVehicleId.keys();
+    for (int teamId : teamIds) {
+        int vehicleId = m_teknofestIdToVehicleId.take(teamId);
+        Vehicle* vehicle = m_vehicleMap.take(vehicleId);
+        if (vehicle) {
+            qDebug() << "Removing Teknofest vehicle, Team ID:" << teamId
+                     << "Vehicle ID:" << vehicle->vehicleId();
+            if (m_selectedVehicle == vehicle) {
+                selectVehicle(-1); // Deselect if it was the selected one
+            }
+            m_vehicleList.removeAll(vehicle); // Remove from the QML list
+            vehicle->deleteLater(); // Safely delete the object
+        }
+    }
+    emit vehiclesChanged(); // Notify QML that the list has shrunk
 }
 
 Vehicle* VehicleManager::getOrCreateMavlinkVehicle(int systemId) {

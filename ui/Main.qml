@@ -13,6 +13,8 @@ ApplicationWindow {
 
     background: Rectangle { color: "#1e1e1e" }
     property var vehicle: AppContext.vehicleManager.mainVehicle
+    property var mavlinkManager: AppContext.mavlinkManager
+    property var teknofestClient: AppContext.teknofestClient
 
     Timer {
         interval: 200; running: true; repeat: true
@@ -20,6 +22,12 @@ ApplicationWindow {
             // This polling pattern is robust if the mainVehicle can appear/disappear
             if (root.vehicle !== AppContext.vehicleManager.mainVehicle) {
                 root.vehicle = AppContext.vehicleManager.mainVehicle;
+            }
+            if (root.mavlinkManager !== AppContext.mavlinkManager) {
+                root.mavlinkManager = AppContext.mavlinkManager;
+            }
+            if (root.teknofestClient !== AppContext.teknofestClient) {
+                root.teknofestClient = AppContext.teknofestClient;
             }
         }
     }
@@ -35,16 +43,45 @@ ApplicationWindow {
         RowLayout {
             anchors.right: parent.right
             spacing: 10
-            Rectangle {
-                color: root.vehicle.isArmed ? "#4CAF50" : "#F44336"
-                width: 20; height: 20; radius: 10;
-                Layout.alignment: Qt.AlignVCenter
+
+            RowLayout {
+                spacing: 5
+                Rectangle {
+                    color: root.teknofestClient.statusString === "Connected." ? "#4CAF50" : "#F44336"
+                    width: 20; height: 20; radius: 10;
+                    Layout.alignment: Qt.AlignVCenter
+                }
+                Label {
+                    text: root.teknofestClient.statusString === "Connected." ? "Connected to Teknofest Server" : root.teknofestClient.statusString
+                    color: "white"
+                }
             }
-            Label {
-                text: root.vehicle.isArmed ? "Armed" : "Disarmed"
-                color: "white"
-                font.bold: true
-                verticalAlignment: Text.AlignVCenter
+
+            RowLayout {
+                spacing: 5
+                Rectangle {
+                    color: root.mavlinkManager.connectionStatusString !== "Disconnected" ? "#4CAF50" : "#F44336"
+                    width: 20; height: 20; radius: 10;
+                    Layout.alignment: Qt.AlignVCenter
+                }
+                Label {
+                    text: root.mavlinkManager.connectionStatusString
+                    color: "white"
+                }
+            }
+
+            RowLayout {
+                spacing: 5
+                Rectangle {
+                    color: root.vehicle.isArmed ? "#4CAF50" : "#F44336"
+                    width: 20; height: 20; radius: 10;
+                    Layout.alignment: Qt.AlignVCenter
+                }
+                Label {
+                    text: root.vehicle.isArmed ? "Armed" : "Disarmed"
+                    color: "white"
+                    verticalAlignment: Text.AlignVCenter
+                }
             }
             Button {
                 text: "Settings"
@@ -74,6 +111,20 @@ ApplicationWindow {
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
+            }
+            isHssVisible: mainPanel.hssVisible
+            onToggleHss: mainPanel.hssVisible = !mainPanel.hssVisible
+        }
+        SelectionPanel {
+            id: selectionPanel
+            anchors {
+                left: parent.left
+                top: parent.top
+                topMargin: (bottomPanel1.height + header.height) / 2.15
+                bottom: bottomPanel1.top
+                bottomMargin: (bottomPanel1.height + header.height) / 2.15
+                // verticalCenter : mainPanel.verticalCenter
+                // horizontalCenter: mainPanel.horizontalCenter
             }
         }
         HorizonPanel {

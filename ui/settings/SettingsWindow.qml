@@ -6,10 +6,52 @@ import App.Context 1.0
 
 ApplicationWindow {
     id: settingsWindow
-    width: 460; height: 460
+    width: 500; height: 500
     visible: true
     title: qsTr("AvaSYS GCS Settings")
     background: Rectangle { color: "#1e1e1e" }
+    property var teknofestClient: AppContext.teknofestClient
+    property var mavlinkClient: AppContext.mavlinkManager
+
+    function saveSettings(){
+        var url = serverUrlField.text.trim();
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url; // Default to HTTPS if no protocol is specified
+        }
+        AppContext.setTeknofestServerSettings(url);
+
+        // todo save settings
+        AppContext.setTeknofestAuth(
+            usernameField.text,
+            passwordField.text,
+        );
+
+        if (enableQrCodeCheckBox.checked) {
+            // conver text to double
+            AppContext.setTeknofestQRCode(
+                parseFloat(qrCodeLatitudeField.text),
+                parseFloat(qrCodeLongitudeField.text)
+            );
+        } else {
+            AppContext.setTeknofestQRCode(-1,-1); // Disable QR Code
+        }
+        var mavlinkUrl = mavlinkUrlField.text.trim().split(':');
+        console.log("M123AVLink URL:", mavlinkUrl[0], mavlinkUrl[1]);
+        AppContext.mavlinkManager.setMavlinkSettings(
+            mavlinkUrl[0], // Protocol (e.g., "udp")
+            parseInt(mavlinkUrl[1]) // Port (e.g., "14550")
+        );
+        console.log("Settings saved successfully. Saved data logs:");
+        console.log("Username:", usernameField.text);
+        console.log("Password :", passwordField.text);
+        console.log("Server URL:", url);
+        console.log("MAVLink UDP URL:", mavlinkUrlField.text);
+        console.log("MAVLink Video URL:", mavlinkVideoUrlField.text);
+        console.log("QR Code Latitude:", qrCodeLatitudeField.text);
+        console.log("QR Code Longitude:", qrCodeLongitudeField.text);
+        console.log("QR Code Enabled:", enableQrCodeCheckBox.checked);
+        console.log("MAVLink Settings:", mavlinkUrlField.text);
+    }
 
     header: ToolBar {
         id: header
@@ -17,10 +59,36 @@ ApplicationWindow {
             anchors.right: parent.right
             spacing: 10
             Button {
-                text: qsTr("Save and Close")
+                text: settingsWindow.teknofestClient.statusString === "Connected." ? qsTr("Disconnect") : qsTr("Connect")
+                onClicked:{
+                    if (settingsWindow.teknofestClient.statusString === "Connected.") {
+                        settingsWindow.teknofestClient.disconnectFromServer();
+                    } else {
+                        saveSettings();
+                        settingsWindow.teknofestClient.login();
+                    }
+                }
+            }
+            Button {
+                text: settingsWindow.mavlinkClient.connectionStatusString !== "Disconnected" ? qsTr("Disconnect MAVLink") : qsTr("Connect MAVLink")
                 onClicked: {
-                    // todo save settings
-                    console.log(qsTr("Settings saved!"));
+                    if (settingsWindow.mavlinkClient.connectionStatusString !== "Disconnected") {
+                        settingsWindow.mavlinkClient.disconnect();
+                    } else {
+                        var mavlinkUrl = mavlinkUrlField.text.trim().split(':');
+                        if (mavlinkUrl.length === 2) {
+                            saveSettings();
+                            settingsWindow.mavlinkClient.connectFromSettings();
+                        } else {
+                            console.error("Invalid MAVLink URL format. Expected format: 'protocol:port'");
+                        }
+                    }
+                }
+            }
+            Button {
+                text: "Save & Close"
+                onClicked: {
+                    saveSettings();
                     settingsWindow.close();
                 }
             }
@@ -31,9 +99,14 @@ ApplicationWindow {
         }
     }
 
-    property var teknofestClient: AppContext.teknofestClient
-    Component.onCompleted: {
-        console.log(qsTr("Settings Window Initialized"));
+    Timer {
+        interval: 200; running: true; repeat: true
+        onTriggered: {
+            // This polling pattern is robust if the teknofestClient can appear/disappear
+            if (settingsWindow.teknofestClient !== AppContext.teknofestClient) {
+                settingsWindow.teknofestClient = AppContext.teknofestClient;
+            }
+        }
     }
 
     RowLayout {
@@ -104,7 +177,7 @@ ApplicationWindow {
                     TextField {
                         id: mavlinkUrlField
                         placeholderText: qsTr("MAVLink UDP URL")
-                        text: "udp://:14550" // Placeholder for MAVLink UDP URL
+                        text: settingsWindow.mavlinkClient.host + ":" + settingsWindow.mavlinkClient.port // Placeholder for MAVLink URL
                         Layout.fillWidth: true
                     }
                     Label {
@@ -136,7 +209,8 @@ ApplicationWindow {
                 CheckBox {
                     id: enableQrCodeCheckBox
                     text: qsTr("Enable QR Code")
-                    checked: true // Default to enabled
+                    checked: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_latitude() !== -1 && settingsWindow.teknofestClient.getTeknofestQRCodeProperty_longitude() !== -1
+                    // enabled: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_latitude() !== -1
                 }
                 Label {
                     text: qsTr("QR Code Latitude:")
@@ -148,6 +222,7 @@ ApplicationWindow {
                     placeholderText: qsTr("QR Code Latitude")
                     text: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_latitude() || "0.0" // Placeholder for latitude
                     Layout.fillWidth: true
+                    enabled: enableQrCodeCheckBox.checked
                 }
                 Label {
                     text: qsTr("QR Code Longitude:")
@@ -159,6 +234,7 @@ ApplicationWindow {
                     placeholderText: qsTr("QR Code Longitude")
                     text: settingsWindow.teknofestClient.getTeknofestQRCodeProperty_longitude() || "0.0" // Placeholder for longitude
                     Layout.fillWidth: true
+                    enabled: enableQrCodeCheckBox.checked
                 }
             }
             Label {

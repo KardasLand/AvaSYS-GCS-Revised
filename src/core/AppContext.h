@@ -34,29 +34,30 @@ public:
         m_mavlinkManager->connectUdp(host, port);
     }
 
-    Q_INVOKABLE void setTeknofestServerSettings(const QString& host, int port) {
-        TeknofestClient::TeknofestServerProperties serverProperties;
-        // check if port is null, if so dont set it
-        if (std::isnan(port)) {
-            serverProperties.set_url(host);
-        } else {
-            serverProperties.set_url(QString("%1:%2").arg(host).arg(port));
-        }
-        m_teknofestClient->setServerProperties(serverProperties);
+    Q_INVOKABLE void setTeknofestServerSettings(const QString& host) {
+        m_teknofestClient->getServerProperties()->setUrl(host);
     }
 
-    Q_INVOKABLE void setTeknofestAuth(const QString& username, const QString& password) {
-        TeknofestClient::TeknofestAuthProperty authProperty;
-        authProperty.username = username;
-        authProperty.password = password;
-        m_teknofestClient->getServerProperties().set_teknofest_auth_property(authProperty);
+
+
+    Q_INVOKABLE void setTeknofestAuth(QString& username, QString& password) {
+        TeknofestAuthProperty* authProperty = m_teknofestClient->getServerProperties()->getTeknofestAuthProperty();
+        if (!authProperty) {
+            authProperty = new TeknofestAuthProperty(this);
+            m_teknofestClient->getServerProperties()->setTeknofestAuthProperty(authProperty);
+        }
+        authProperty->setUsername(username);
+        authProperty->setPassword(password);
     }
 
     Q_INVOKABLE void setTeknofestQRCode(double latitude, double longitude) {
-        TeknofestClient::TeknofestQRCodeProperty qrCodeProperty;
-        qrCodeProperty.qrLatitude = latitude;
-        qrCodeProperty.qrLongitude = longitude;
-        m_teknofestClient->getServerProperties().set_teknofest_qr_code_property(qrCodeProperty);
+        TeknofestQRCodeProperty* qrCodeProperty = m_teknofestClient->getServerProperties()->getTeknofestQRCodeProperty();
+        if (!qrCodeProperty) {
+            qrCodeProperty = new TeknofestQRCodeProperty(this);
+            m_teknofestClient->getServerProperties()->setTeknofestQRCodeProperty(qrCodeProperty);
+        }
+        qrCodeProperty->setQrLatitude(latitude);
+        qrCodeProperty->setQrLongitude(longitude);
     }
 private:
     explicit AppContext(QObject* parent = nullptr);

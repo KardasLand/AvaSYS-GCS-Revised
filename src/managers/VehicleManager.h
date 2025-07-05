@@ -30,10 +30,13 @@ public:
     // Getter for the 'selectedVehicle' property
     Vehicle* selectedVehicle() const;
 
+
     Q_INVOKABLE Vehicle* getMainVehicle() const;
 
     // Called from QML to change the selected vehicle, using its unique internal ID.
     Q_INVOKABLE void selectVehicle(int vehicleId);
+
+    void clearTeknofestVehicles();
 
 public slots:
     // Called by MavlinkManager to update vehicle data
@@ -44,6 +47,7 @@ public slots:
     // Called by TeknofestClient to update vehicle data
     void updateTeknofestVehicles(const QJsonArray &vehicleData);
     void startTransmittingTelemetry(int teamid);
+    void stopTransmittingTelemetry();
 signals:
     // Emitted whenever the list of vehicles changes (add/remove).
     void vehiclesChanged();
@@ -51,7 +55,8 @@ signals:
     void mainVehicleChanged();
 
     void transmitTelemetryRequest(QJsonObject &vehicleData);
-    
+    void hssCoordinateRequest();
+
     // Emitted whenever the selected vehicle changes.
     void selectedVehicleChanged();
 

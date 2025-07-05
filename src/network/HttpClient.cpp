@@ -13,6 +13,17 @@ HttpClient::~HttpClient() {
     // The QObject parent system will handle deletion of m_networkManager
 }
 
+void HttpClient::disconnectClient() {
+    qDebug() << "Disconnecting HttpClient";
+    if (m_networkManager) {
+        disconnect(m_networkManager, &QNetworkAccessManager::finished, this, nullptr);
+
+        m_networkManager->deleteLater();
+        m_networkManager = nullptr;
+    }
+    emit statusChanged("Disconnected");
+}
+
 void HttpClient::sendLoginRequest(const QString& url, const QString& username, const QString& password) {
     QUrl requestUrl(url);
     if (!requestUrl.isValid()) {
@@ -30,8 +41,11 @@ void HttpClient::sendLoginRequest(const QString& url, const QString& username, c
     QNetworkRequest request(requestUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
+    qDebug() << "Sending login request to:" << requestUrl.toString();
+    emit statusChanged("LoginRequestSent");
     QNetworkReply* reply = m_networkManager->post(request, jsonDoc.toJson());
     connect(reply, &QNetworkReply::finished, this, &HttpClient::onLoginReplyFinished);
+
 }
 
 void HttpClient::onLoginReplyFinished() {
@@ -44,6 +58,7 @@ void HttpClient::onLoginReplyFinished() {
 
     if (reply->error() != QNetworkReply::NoError) {
         errorString = reply->errorString();
+        emit statusChanged("LoginReplyError");
     } else {
         // Find the session_id cookie
         QList<QNetworkCookie> cookies = m_networkManager->cookieJar()->cookiesForUrl(reply->url());
@@ -75,6 +90,7 @@ void HttpClient::onLoginReplyFinished() {
 void HttpClient::sendTelemetryRequest(const QString& url, const QByteArray& sessionId, const QJsonObject& telemetryData) {
     QUrl requestUrl(url);
     if (!requestUrl.isValid()) {
+        emit statusChanged("Invalid URL");
         emit telemetryResponseReceived(QByteArray(), "Invalid URL");
         return;
     }
@@ -88,6 +104,21 @@ void HttpClient::sendTelemetryRequest(const QString& url, const QByteArray& sess
     connect(reply, &QNetworkReply::finished, this, &HttpClient::onTelemetryReplyFinished);
 }
 
+void HttpClient::hssRequest(const QString& url, const QByteArray &sessionId) {
+    QUrl requestUrl(url);
+    if (!requestUrl.isValid()) {
+        emit statusChanged("Invalid URL");
+        emit hssResponseReceived(QByteArray(), "Invalid URL");
+        return;
+    }
+    QNetworkRequest request(requestUrl);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader("Cookie", sessionId);
+    emit statusChanged("HSSRequestSent");
+    QNetworkReply* reply = m_networkManager->get(request);
+    connect(reply, &QNetworkReply::finished, this, &HttpClient::onHssReplyFinished);
+}
+
 void HttpClient::onTelemetryReplyFinished() {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply) return;
@@ -97,10 +128,31 @@ void HttpClient::onTelemetryReplyFinished() {
 
     if (reply->error() != QNetworkReply::NoError) {
         errorString = reply->errorString();
+        emit statusChanged("TelemetryReplyError");
     } else {
         responseData = reply->readAll();
+        emit statusChanged("TelemetryReplySuccess");
     }
 
     emit telemetryResponseReceived(responseData, errorString);
+    reply->deleteLater();
+}
+
+void HttpClient::onHssReplyFinished() {
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
+    if (!reply) return;
+
+    QString errorString;
+    QByteArray responseData;
+
+    if (reply->error() != QNetworkReply::NoError) {
+        errorString = reply->errorString();
+        emit statusChanged("HSSReplyError");
+    } else {
+        responseData = reply->readAll();
+        emit statusChanged("HSSReplySuccess");
+    }
+
+    emit hssResponseReceived(responseData, errorString);
     reply->deleteLater();
 }

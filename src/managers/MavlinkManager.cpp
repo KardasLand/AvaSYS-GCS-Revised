@@ -47,6 +47,22 @@ void MavlinkManager::connectUdp(const QString& ip, quint16 port) {
     emit isConnectedChanged();
 }
 
+void MavlinkManager::connectFromSettings() {
+    disconnect();
+    // For a GCS, we bind to a local port to listen for incoming data from any vehicle.
+    if (!m_udpSocket->bind(QHostAddress::AnyIPv4, m_port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+        QString error = QString("UDP Bind Failed: %1").arg(m_udpSocket->errorString());
+        qWarning() << error;
+        emit connectionFailed(error);
+        return;
+    }
+
+    m_isConnected = true;
+    m_connectionStatusString = QString("Listening on UDP Port %1").arg(m_port);
+    qInfo() << m_connectionStatusString;
+    emit isConnectedChanged();
+}
+
 void MavlinkManager::disconnect() {
     if (m_isConnected) {
         m_udpSocket->close();

@@ -39,6 +39,10 @@ qt_add_executable(appAvaSYS2
         src/horizon/linearindicator.h
         src/horizon/painterhelpers.cpp
         src/horizon/painterhelpers.h
+        src/teknofest/TeknofestHSSProperty.h
+        src/teknofest/TeknofestServerProperty.h
+        src/teknofest/TeknofestAuthProperty.h
+        src/teknofest/TeknofestQRCodeProperty.h
 )
 
 qt_add_qml_module(appAvaSYS2
@@ -48,6 +52,7 @@ qt_add_qml_module(appAvaSYS2
         ui/Main.qml
         ui/panels/MainPanel.qml
         ui/panels/BottomPanel.qml
+        ui/panels/SelectionPanel.qml
         ui/components/StyledGauge.qml
         ui/components/CompassGauge.qml
         ui/settings/SettingsWindow.qml

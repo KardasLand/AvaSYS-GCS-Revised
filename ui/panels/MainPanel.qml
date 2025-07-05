@@ -11,7 +11,8 @@ Rectangle {
 
     property var vehicleModel: AppContext.vehicleManager.vehicles
     property var mainVehicle: null
-
+    property var teknofestClient: AppContext.teknofestClient
+    property alias hssVisible: hssItemView.visible
     Timer {
         interval: 200; running: true; repeat: true
         onTriggered: {
@@ -19,6 +20,10 @@ Rectangle {
             if (root.mainVehicle !== AppContext.vehicleManager.mainVehicle) {
                 root.mainVehicle = AppContext.vehicleManager.mainVehicle;
             }
+            if (root.teknofestClient !== AppContext.teknofestClient) {
+                root.teknofestClient = AppContext.teknofestClient;
+            }
+
         }
     }
 
@@ -33,6 +38,43 @@ Rectangle {
         map.onSupportedMapTypesChanged: {
             if (map.supportedMapTypes.length > 0) {
                 map.activeMapType = map.supportedMapTypes[map.supportedMapTypes.length - 1];
+            }
+        }
+
+
+        MapItemView {
+            id: hssItemView
+            model: root.teknofestClient.serverProperties.teknofestHSSProperties;
+            parent: mapvi.map
+            delegate: MapCircle {
+                id: hssItemGroup
+                autoFadeIn: false
+                property var data: modelData;
+                radius: data.hssCircleRadius
+                center: QtPositioning.coordinate(data.hssLatitude, data.hssLongitude)
+                Component.onCompleted: {
+                    console.log("MapItemView for HSS Properties initialized with coordinate:", modelData.hssLatitude, modelData.hssLongitude);
+                }
+                opacity: 0.2
+                // light red
+                color: "#f75e45"
+
+                border.color: "#5b2319"
+                border.width: 2
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: {
+                        console.log("Clicked on HSS Circle:", hssItemGroup.data.hssId);
+                        // You can add more actions here, like showing a popup or changing the view
+                    }
+                    onEntered: {
+                        console.log("Mouse entered HSS Circle:", hssItemGroup.data.hssId);
+                    }
+                    onExited: {
+                        console.log("Mouse exited HSS Circle:", hssItemGroup.data.hssId);
+                    }
+                }
             }
         }
 
