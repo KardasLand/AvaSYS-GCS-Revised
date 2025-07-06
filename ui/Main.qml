@@ -101,6 +101,7 @@ ApplicationWindow {
 
     Item {
         anchors.fill: parent
+
         MainPanel {
             id: mainPanel
             anchors.fill: parent
@@ -129,6 +130,13 @@ ApplicationWindow {
         }
         HorizonPanel {
             id: horizonPanel
+        }
+        VideoPanel {
+            id: videoRect
+            anchors {
+                right: parent.right
+                top: parent.top
+            }
         }
     }
 

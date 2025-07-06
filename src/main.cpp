@@ -5,6 +5,7 @@
 #include <QQmlContext>
 
 #include "core/AppContext.h"
+#include "core/VideoItem.h"
 #include "horizon/linearindicator.h"
 #include "managers/MavlinkManager.h"
 #include "managers/TeknofestClient.h"
@@ -15,11 +16,13 @@ int main(int argc, char *argv[])
     const QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
+    VideoItem videoItem;
     engine.rootContext()->setContextProperty("THUNDERFOREST_API_KEY", qgetenv("THUNDERFOREST_API_KEY"));
     engine.rootContext()->setContextProperty("TEKNOFEST_API_URL", qgetenv("TEKNOFEST_API_URL"));
 
     AppContext* appContext = AppContext::instance();
 
+    qmlRegisterType<VideoItem>("CustomTypes", 1, 0, "VideoItem");
     qmlRegisterSingletonInstance<AppContext>("App.Context", 1, 0, "AppContext", appContext);
     qmlRegisterUncreatableType<VehicleManager>("App.Managers", 1, 0, "VehicleManager", "Cannot create VehicleManager in QML");
     qmlRegisterUncreatableType<MavlinkManager>("App.Managers", 1, 0, "MavlinkManager", "Cannot create MavlinkManager in QML");

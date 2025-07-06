@@ -39,6 +39,10 @@ double Vehicle::altitude() const {
     return m_altitude;
 }
 
+double Vehicle::relativeAltitude() const {
+    return m_relativeAltitude;
+}
+
 double Vehicle::groundSpeed() const {
     return m_groundSpeed;
 }
@@ -129,6 +133,18 @@ void Vehicle::setCoordinate(const QGeoCoordinate &coordinate) {
     }
     m_coordinate = coordinate;
     emit coordinateChanged();
+}
+
+void Vehicle::setRelativeAltitude(double relativeAltitude) {
+    if (m_relativeAltitude == relativeAltitude) {
+        return;
+    }
+    if (qIsNaN(relativeAltitude)) {
+        // qWarning() << "Attempted to set relative altitude to NaN, ignoring.";
+        return;
+    }
+    m_relativeAltitude = relativeAltitude;
+    emit altitudeChanged(); // Notify that altitude has changed
 }
 
 void Vehicle::setAltitude(double altitude) {
@@ -227,11 +243,19 @@ void Vehicle::setBatteryCurrent(double current) {
     emit batteryCurrentChanged();
 }
 
+void Vehicle::setOptionalArmed(std::optional<bool> armed) {
+    if (!armed.has_value()) {
+        return; // Do not set armed state to NULL
+    }
+    setIsArmed(armed.value());
+}
+
 void Vehicle::setIsArmed(bool armed) {
     // qDebug() << "Vehicle setIsArmed called with:" << armed << ", current state:" << m_isArmed;
     if (m_isArmed == armed) {
         return;
     }
+    qDebug() << "Vehicle isArmed changed from" << m_isArmed << "to" << armed;
     m_isArmed = armed;
     emit isArmedChanged();
 }

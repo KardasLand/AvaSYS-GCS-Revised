@@ -42,6 +42,8 @@ GstFlowReturn VideoItem::callback(GstElement *sink, gpointer data) {
     return GST_FLOW_OK;
 }
 
+// todo find why this does not work.
+// manual command: gst-launch-1.0 udpsrc port=5600 ! application/x-rtp, payload=96 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! video/x-raw,format=BGR ! videoconvert ! appsink name=sink
 void VideoItem::start_gst() {
     gchar *descr = g_strdup_printf("udpsrc port=%d ! application/x-rtp, payload=96 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! video/x-raw,format=BGR ! videoconvert ! appsink name=sink", port);
     GError *error = nullptr;
@@ -65,7 +67,7 @@ void VideoItem::start_gst() {
     gst_app_sink_set_max_buffers(GST_APP_SINK(sink), 2);
     gst_base_sink_set_sync(GST_BASE_SINK(sink), false);
     g_signal_connect(sink, "new-sample", G_CALLBACK(callback), this);
-
+    qDebug() << "Starting GStreamer pipeline on port" << port;
     gst_element_set_state(video_pipe, GST_STATE_PLAYING);
 }
 
@@ -75,5 +77,6 @@ void VideoItem::updateFrame(const cv::Mat &frame) {
 }
 
 void VideoItem::run() {
+    // Start the GStreamer pipeline in a separate thread
     start_gst();
 }

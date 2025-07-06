@@ -16,6 +16,7 @@ Rectangle {
     //todo refactor this shit
 
     property var vehicle: AppContext.vehicleManager.mainVehicle
+    property var mavlinkManager: AppContext.mavlinkManager
     property bool isHssVisible: false
     signal toggleHss()
 
@@ -30,10 +31,60 @@ Rectangle {
     property real mockCurrent: -0.8
     property real mockBattery: 100.9
 
+    Popup {
+        id: altitudePopup
+        anchors.centerIn: Overlay.overlay
+
+        modal: true
+        focus: true
+        dim: false
+
+        background: Rectangle {
+            color: "#2C2C2E"; radius: 12
+            border.color: "#A0A0A0"; border.width: 1
+        }
+        ColumnLayout {
+            spacing: 2
+            anchors.fill: parent
+            Text {
+                text: "Enter Altitude for Takeoff"
+                color: "white"
+                font.pixelSize: 16
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            TextField {
+                id: altitudeInput
+                placeholderText: "Altitude in meters"
+                width: parent.width - 40
+                font.pixelSize: 14
+                color: "white"
+                background: Rectangle { color: "#3C3C3E"; radius: 5 }
+            }
+
+            Button {
+                text: "Confirm"
+                onClicked: {
+                    let altitude = parseFloat(altitudeInput.text);
+                    if (!isNaN(altitude)) {
+                        bottomPanel.mavlinkManager.sendTakeoffCommand(bottomPanel.vehicle.systemId, altitude);
+                        altitudePopup.close();
+                    } else {
+                        console.warn("Invalid altitude input");
+                    }
+                }
+            }
+        }
+
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+    }
+
     Timer {
         interval: 200; running: true; repeat: true
         onTriggered: {
             bottomPanel.vehicle = AppContext.vehicleManager.mainVehicle;
+            bottomPanel.mavlinkManager = AppContext.mavlinkManager;
             if (!bottomPanel.vehicle) {
                 // If no vehicle is available, use mock data
                 mockSpeed = mockSpeed || 16.8;
@@ -78,21 +129,51 @@ Rectangle {
             // series of buttons to control the vehicle, toggle the visibility of components etc..
             Layout.alignment: Qt.AlignVCenter; spacing: 5
             Button {
-                text: "Takeoff"
+                text: vehicle.isFlying ? "Land" : "Takeoff"
+                background: Rectangle {
+                    color: vehicle.isFlying ? "#F44336" : "#4CAF50"
+                    radius: 5
+                }
                 Layout.preferredWidth: 150
                 onClicked: {
-                    console.log("Takeoff button clicked");
+                    if (vehicle.isFlying) {
+                        console.log("Land button clicked", vehicle.vehicleId, vehicle.systemId);
+                        mavlinkManager.sendLandCommand(vehicle.systemId);
+                    } else {
+                        console.log("Takeoff button clicked");
+                        if (altitudePopup.visible) {
+                            altitudePopup.close();
+                        } else {
+                            altitudePopup.open();
+                        }
+                    }
                 }
             }
             Button {
-                text: "Takeoff"
+                text: vehicle.isArmed ? "Disarm" : "Arm (Shift for Force Arm)"
+                background: Rectangle {
+                    color: !vehicle.isArmed ? "#F44336" : "#4CAF50"
+                    radius: 5
+                }
                 Layout.preferredWidth: 150
-                onClicked: {
-                    console.log("Takeoff button clicked");
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: (mouse) => {
+                        let isArmed = vehicle.isArmed;
+                        let force = mouse.modifiers & Qt.ShiftModifier;
+
+                        console.log("Arm/Disarm button clicked",
+                            "Vehicle ID:", vehicle.vehicleId,
+                            "System ID:", vehicle.systemId,
+                            "Current State:", isArmed,
+                            "Force Arm:", force);
+
+                        mavlinkManager.sendArmCommand(vehicle.systemId, !isArmed, force);
+                    }
                 }
             }
             Button {
-                text: "Takeoff"
+                text: "Missions"
                 Layout.preferredWidth: 150
                 onClicked: {
                     console.log("Takeoff button clicked");

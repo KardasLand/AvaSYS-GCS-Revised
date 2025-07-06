@@ -53,6 +53,7 @@ qt_add_qml_module(appAvaSYS2
         ui/panels/MainPanel.qml
         ui/panels/BottomPanel.qml
         ui/panels/SelectionPanel.qml
+        ui/panels/VideoPanel.qml
         ui/components/StyledGauge.qml
         ui/components/CompassGauge.qml
         ui/settings/SettingsWindow.qml

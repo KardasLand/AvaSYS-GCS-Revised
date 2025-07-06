@@ -40,9 +40,9 @@ public:
 
 public slots:
     // Called by MavlinkManager to update vehicle data
-    void updateMavlinkVehicle(int systemId, const QGeoCoordinate &coord, double alt,
+    void updateMavlinkVehicle(int systemId, const QGeoCoordinate &coord, double alt, double relativeAltitude,
                               double speed, double heading, double roll, double pitch,
-                              double batteryRemaining, double batteryVoltage, double batteryCurrent, bool isArmed, const QString& flightMode);
+                              double batteryRemaining, double batteryVoltage, double batteryCurrent, std::optional<bool> isArmed, const QString& flightMode);
 
     // Called by TeknofestClient to update vehicle data
     void updateTeknofestVehicles(const QJsonArray &vehicleData);

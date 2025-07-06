@@ -8,6 +8,7 @@
 #include <mavlink/common/mavlink.h>
 #include <QUdpSocket>
 #include <QHostAddress>
+#include <QTimer>
 
 
 class MavlinkManager : public QObject
@@ -51,13 +52,14 @@ public:
 
     }
     Q_INVOKABLE void connectFromSettings();
+    void sendHeartbeat(QHostAddress &address, quint16 port);
 public slots:
     Q_INVOKABLE void connectUdp(const QString& ip, quint16 port);
 
     Q_INVOKABLE void disconnect();
     Q_INVOKABLE void sendArmCommand(int systemId, bool arm, bool force = false);
     Q_INVOKABLE void sendTakeoffCommand(int systemId, double altitude);
-    Q_INVOKABLE void sendReturnToLaunchCommand(int systemId);
+    Q_INVOKABLE void sendLandCommand(int systemId);
 
 signals:
     void isConnectedChanged();
@@ -66,9 +68,10 @@ signals:
     void connectionFailed(const QString& error);
 
     // The single, powerful signal to update the VehicleManager
-    void mavlinkVehicleUpdated(int systemId, const QGeoCoordinate &coord, double alt,
+    void mavlinkVehicleUpdated(int systemId, const QGeoCoordinate &coord, double alt, double relativeAltitude,
                                double speed, double heading, double roll, double pitch,
-                               double batteryRemaining, double batteryVoltage, double batteryCurrent, bool isArmed, const QString& flightMode);
+                               double batteryRemaining, double batteryVoltage, double batteryCurrent, std::optional<bool> isArmed, const QString& flightMode);
+
 
 private slots:
     void onUdpReadyRead();
@@ -82,6 +85,8 @@ private:
     QString m_connectionStatusString;
     QString m_host;
     int m_port = 14550; // Default MAVLink port
+    int m_senderPort; // Default sender port for GCS
+    QTimer* m_heartbeatTimer = nullptr;
 
     // Maps a vehicle's system ID to its network endpoint (IP and port).
     // This is crucial for sending commands back to the correct vehicle.

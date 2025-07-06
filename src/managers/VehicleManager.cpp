@@ -59,9 +59,9 @@ Vehicle * VehicleManager::getMainVehicle() const{
     return nullptr; // No MAVLink vehicle found
 }
 
-void VehicleManager::updateMavlinkVehicle(int systemId, const QGeoCoordinate& coord, double alt,
+void VehicleManager::updateMavlinkVehicle(int systemId, const QGeoCoordinate& coord, double alt, double relativeAltitude,
                                           double speed, double heading, double roll, double pitch,
-                                          double batteryRemaining, double batteryVoltage, double batteryCurrent,  bool isArmed, const QString& flightMode)
+                                          double batteryRemaining, double batteryVoltage, double batteryCurrent,  std::optional<bool> isArmed, const QString& flightMode)
 {
     Vehicle* vehicle = getOrCreateMavlinkVehicle(systemId);
 
@@ -72,6 +72,9 @@ void VehicleManager::updateMavlinkVehicle(int systemId, const QGeoCoordinate& co
     }
     if (!std::isnan(alt)) {
         vehicle->setAltitude(alt);
+    }
+    if (!std::isnan(relativeAltitude)) {
+        vehicle->setRelativeAltitude(relativeAltitude);
     }
     if (!std::isnan(speed)) {
         vehicle->setGroundSpeed(speed);
@@ -99,7 +102,7 @@ void VehicleManager::updateMavlinkVehicle(int systemId, const QGeoCoordinate& co
     }
 
     // isArmed is a boolean, so it's always valid.
-    vehicle->setIsArmed(isArmed);
+    vehicle->setOptionalArmed(isArmed);
 
     // emit vehiclesChanged() ; // Notify QML that the list has changed
 }
@@ -124,7 +127,6 @@ void VehicleManager::updateTeknofestVehicles(const QJsonArray &vehicleData) {
         vehicle->setHeading(obj.value("iha_yonelme").toDouble());
         vehicle->setRoll(obj.value("iha_yatis").toDouble());
         vehicle->setPitch(obj.value("iha_dikilme").toDouble());
-        vehicle->setIsArmed(true);
     }
 
     // --- Logic to remove stale vehicles that are no longer in the API feed ---

@@ -4,6 +4,8 @@
 #include <QDebug>
 #include <cmath>
 
+#include "src/core/AppContext.h"
+
 // Helper to convert radians to degrees
 static double radToDeg(double rad) {
     return rad * 180.0 / M_PI;
@@ -44,6 +46,7 @@ void MavlinkManager::connectUdp(const QString& ip, quint16 port) {
     m_isConnected = true;
     m_connectionStatusString = QString("Listening on UDP Port %1").arg(port);
     qInfo() << m_connectionStatusString;
+
     emit isConnectedChanged();
 }
 
@@ -56,10 +59,12 @@ void MavlinkManager::connectFromSettings() {
         emit connectionFailed(error);
         return;
     }
+    // send_heartbeat();
 
     m_isConnected = true;
     m_connectionStatusString = QString("Listening on UDP Port %1").arg(m_port);
     qInfo() << m_connectionStatusString;
+    // sendHeartbeat();
     emit isConnectedChanged();
 }
 
@@ -84,7 +89,27 @@ void MavlinkManager::onUdpReadyRead() {
         m_udpSocket->readDatagram(datagram.data(), datagram.size(), &senderAddress, &senderPort);
 
         parseMavlinkData(datagram, senderAddress, senderPort);
+
+        sendHeartbeat(senderAddress, senderPort);
+
     }
+}
+
+void MavlinkManager::sendHeartbeat(QHostAddress &address, quint16 port) {
+    mavlink_message_t message;
+    mavlink_heartbeat_t heartbeat;
+    heartbeat.type = MAV_TYPE_GCS;
+    heartbeat.autopilot = MAV_AUTOPILOT_INVALID;
+    heartbeat.base_mode = 0;
+    heartbeat.custom_mode = 0;
+    heartbeat.system_status = 0;
+    Vehicle* vehicle = AppContext::instance()->vehicleManager()->getMainVehicle();
+    mavlink_msg_heartbeat_encode(vehicle->systemId(), 200, &message, &heartbeat);
+    uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+    const int len = mavlink_msg_to_send_buffer(buffer, &message);
+    // qDebug() << "Sending MAVLink heartbeat from GCS with system ID" << vehicle->systemId();
+    // qDebug() << "Sending MAVLink heartbeat to" << address.toString() << ":" << port;
+    m_udpSocket->writeDatagram(reinterpret_cast<const char*>(buffer), len, address, port);
 }
 
 void MavlinkManager::parseMavlinkData(const QByteArray& data, const QHostAddress& senderAddress, quint16 senderPort) {
@@ -100,6 +125,7 @@ void MavlinkManager::parseMavlinkData(const QByteArray& data, const QHostAddress
             // Temporary variables to hold data before emitting the signal
             QGeoCoordinate coord;
             double altitude = NAN;
+            double relativeAltitude = NAN; // Relative altitude if needed
             double groundSpeed = NAN;
             double heading = NAN;
             double roll = NAN;
@@ -107,7 +133,7 @@ void MavlinkManager::parseMavlinkData(const QByteArray& data, const QHostAddress
             double batteryRemaining = NAN;
             double batteryVoltage = NAN;
             double batteryCurrent = NAN;
-            bool isArmed = true;
+            std::optional<bool> isArmed = std::nullopt;
             QString flightMode = "Unknown";
             bool shouldUpdate = false;
 
@@ -117,7 +143,12 @@ void MavlinkManager::parseMavlinkData(const QByteArray& data, const QHostAddress
                     mavlink_msg_heartbeat_decode(&msg, &heartbeat);
                     if (heartbeat.type == MAV_TYPE_GCS) break; // Ignore other GCS heartbeats
 
-                    isArmed = (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED);
+                    // qDebug() << "Received Heartbeat: base_mode:" << heartbeat.base_mode
+                    // << "custom_mode:" << heartbeat.custom_mode
+                    // << "type:" << heartbeat.type
+                    // << "autopilot:" << heartbeat.autopilot;;
+                    isArmed = (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED) != 0;
+                    // qDebug() << "Is armed:" << isArmed;
                     // isArmed = (heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED);
                     // qDebug() << "Heartbeat received from vehicle" << msg.sysid
                     //          << "Type:" << heartbeat.type
@@ -148,6 +179,7 @@ void MavlinkManager::parseMavlinkData(const QByteArray& data, const QHostAddress
 
                     coord.setLatitude(pos.lat / 1e7);
                     coord.setLongitude(pos.lon / 1e7);
+                    relativeAltitude = pos.relative_alt / 1000; // Relative altitude in meters
                     altitude = pos.alt / 1000; // Relative altitude in meters
                     heading = pos.hdg / 100; // Heading in degrees
                     // qDebug() << "Global Position from vehicle" << msg.sysid
@@ -219,7 +251,7 @@ void MavlinkManager::parseMavlinkData(const QByteArray& data, const QHostAddress
                 //          << "Armed:" << isArmed
                 //          << "Flight Mode:" << flightMode;
                 // Emit one signal with all the new data for this vehicle
-                emit mavlinkVehicleUpdated(msg.sysid, coord, altitude, groundSpeed,
+                emit mavlinkVehicleUpdated(msg.sysid, coord, altitude, relativeAltitude, groundSpeed,
                                            heading, roll, pitch, batteryRemaining, batteryVoltage, batteryCurrent, isArmed, flightMode);
             }
         }
@@ -236,7 +268,8 @@ void MavlinkManager::sendMavlinkCommandLong(int systemId, uint16_t command, floa
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
     // Our GCS system ID is 255, component is MAV_COMP_ID_MISSIONPLANNER
     uint8_t ourSystemId = 255;
-    uint8_t ourComponentId = 190;
+    // 190 previously
+    uint8_t ourComponentId = 200;
 
     mavlink_msg_command_long_pack(
         ourSystemId, ourComponentId, &msg,
@@ -244,6 +277,7 @@ void MavlinkManager::sendMavlinkCommandLong(int systemId, uint16_t command, floa
         command, 0, // Command and confirmation
         p1, p2, p3, p4, p5, p6, p7
     );
+    qDebug() << "Sending MAVLink command" << command << "to vehicle" << systemId;
 
     uint16_t len = mavlink_msg_to_send_buffer(buffer, &msg);
     auto endpoint = m_vehicleEndpoints.value(systemId);
@@ -252,9 +286,21 @@ void MavlinkManager::sendMavlinkCommandLong(int systemId, uint16_t command, floa
 
 void MavlinkManager::sendArmCommand(int systemId, bool arm, bool force) {
     qInfo() << (arm ? "ARMING" : "DISARMING") << "vehicle" << systemId << (force ? "with force." : ".");
-    float p1 = arm ? 1.0f : 0.0f;
-    float p2 = force ? 21196.0f : 0.0f; // Magic number for force arm/disarm
-    sendMavlinkCommandLong(systemId, MAV_CMD_COMPONENT_ARM_DISARM, p1, p2);
+    float p1 = arm ? 1 : 0;
+    float p2 = force ? 21196 : 0; // Magic number for force arm/disarm
+    // sendMavlinkCommandLong(systemId, MAV_CMD_COMPONENT_ARM_DISARM, p1, p2);
+    mavlink_message_t msg;
+    mavlink_msg_command_long_pack(255, 200, &msg,
+                                  systemId, 1, // Target System and Component
+                                  MAV_CMD_COMPONENT_ARM_DISARM, 0, p1,p2, 0, 0, 0, 0, 0);
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+    auto endpoint = m_vehicleEndpoints.value(systemId);
+    if (endpoint.first.isNull() || endpoint.second == 0) {
+        qWarning() << "Cannot send command: No endpoint for system ID" << systemId;
+        return;
+    }
+    m_udpSocket->writeDatagram(reinterpret_cast<const char*>(buf), len, endpoint.first, endpoint.second);
 }
 
 void MavlinkManager::sendTakeoffCommand(int systemId, double altitude) {
@@ -264,7 +310,7 @@ void MavlinkManager::sendTakeoffCommand(int systemId, double altitude) {
     sendMavlinkCommandLong(systemId, MAV_CMD_NAV_TAKEOFF, 0, 0, 0, NAN, 0, 0, altitude);
 }
 
-void MavlinkManager::sendReturnToLaunchCommand(int systemId) {
-    qInfo() << "Sending RETURN TO LAUNCH command to vehicle" << systemId;
-    sendMavlinkCommandLong(systemId, MAV_CMD_NAV_RETURN_TO_LAUNCH);
+void MavlinkManager::sendLandCommand(int systemId) {
+    qInfo() << "Sending LAND command to vehicle" << systemId;
+    sendMavlinkCommandLong(systemId, MAV_CMD_NAV_LAND);
 }

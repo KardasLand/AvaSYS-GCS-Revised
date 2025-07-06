@@ -19,6 +19,7 @@ class Vehicle : public QObject{
 
     Q_PROPERTY(QGeoCoordinate coordinate READ coordinate NOTIFY coordinateChanged)
     Q_PROPERTY(double altitude READ altitude NOTIFY altitudeChanged)
+    Q_PROPERTY(double relativeAltitude READ altitude NOTIFY altitudeChanged) // Relative altitude if needed
     Q_PROPERTY(double groundSpeed READ groundSpeed NOTIFY groundSpeedChanged)
     Q_PROPERTY(double heading READ heading NOTIFY headingChanged)
     Q_PROPERTY(double roll READ roll NOTIFY rollChanged)
@@ -28,6 +29,7 @@ class Vehicle : public QObject{
     Q_PROPERTY(double batteryCurrent READ batteryCurrent NOTIFY batteryCurrentChanged)
     Q_PROPERTY(bool isArmed READ isArmed NOTIFY isArmedChanged)
     Q_PROPERTY(QString flightMode READ flightMode NOTIFY flightModeChanged)
+    Q_PROPERTY(bool isFlying READ isFlying CONSTANT) // Derived property, not stored
 
     Q_PROPERTY(QString displayId READ displayId NOTIFY displayIdChanged)
     Q_PROPERTY(QString altitudeString READ altitudeString NOTIFY altitudeChanged)
@@ -48,6 +50,7 @@ public:
     Q_INVOKABLE bool isSelected() const;
     QGeoCoordinate coordinate() const;
     double altitude() const;
+    double relativeAltitude() const; // Relative altitude if needed
 
     Q_INVOKABLE double groundSpeed() const;
     double heading() const;
@@ -65,11 +68,16 @@ public:
     QString altitudeString() const;
     QString groundSpeedString() const;
 
+    bool isFlying() const {
+        return m_isArmed && m_relativeAltitude > 1.5 && m_groundSpeed > 0.5;
+    }
+
 public slots:
     void setSystemId(int id);
     void setTeamId(int id);
     void setIsSelected(bool selected);
     void setCoordinate(const QGeoCoordinate &coordinate);
+    void setRelativeAltitude(double relativeAltitude); // Relative altitude if needed
     void setAltitude(double altitude);
     void setGroundSpeed(double speed);
     void setHeading(double heading);
@@ -78,6 +86,9 @@ public slots:
     void setBatteryVoltage(double voltage);
     void setBatteryRemaining(double remaining);
     void setBatteryCurrent(double current);
+
+    void setOptionalArmed(std::optional<bool> armed);
+
     void setIsArmed(bool armed);
     void setFlightMode(const QString& mode);
 signals:
@@ -86,6 +97,7 @@ signals:
     void isSelectedChanged();
     void coordinateChanged();
     void altitudeChanged();
+    void relativeAltitudeChanged(); // Relative altitude if needed
     void groundSpeedChanged();
     void headingChanged();
     void rollChanged();
@@ -106,6 +118,7 @@ private:
 
     QGeoCoordinate m_coordinate;
     double m_altitude = 0.0;
+    double m_relativeAltitude = 0.0; // Relative altitude if needed
     double m_groundSpeed = 0.0;
     double m_heading = 0.0;
     double m_roll = 0.0;
