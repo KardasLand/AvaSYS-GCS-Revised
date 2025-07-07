@@ -24,6 +24,10 @@ TeknofestClient * AppContext::teknofestClient() const {
 void AppContext::autoConnectMavlink() {
     // start a mavlink connection
     // m_mavlinkManager->connectUdp("127.0.1", 14550);
+
+    m_mavlinkManager->setCommunicationType(MavlinkManager::SERIAL);
+    m_mavlinkManager->setSerialPort("/dev/ttyUSB0");
+    m_mavlinkManager->setBaudrate(57600);
     m_mavlinkManager->setHost("127.0.0.1");
     m_mavlinkManager->setPort(14550);
     m_mavlinkManager->connectFromSettings();

@@ -248,11 +248,11 @@ Rectangle {
                 text: "Toggle Camera"
                 Layout.preferredWidth: 150
                 background: Rectangle {
-                    color: bottomPanel.isHssVisible ? "#4CAF50" : "#F44336"
+                    color: videoRect.visible ? "#4CAF50" : "#F44336"
                     radius: 5
                 }
                 onClicked: {
-                    bottomPanel.toggleHss()
+                    videoRect.visible = !videoRect.visible;
                 }
             }
         }

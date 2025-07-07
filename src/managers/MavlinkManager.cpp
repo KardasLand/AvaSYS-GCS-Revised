@@ -3,6 +3,8 @@
 #include <QHostAddress>
 #include <QDebug>
 #include <cmath>
+#include <QDir>
+#include <QFileInfo>
 
 #include "src/core/AppContext.h"
 
@@ -14,11 +16,14 @@ static double radToDeg(double rad) {
 MavlinkManager::MavlinkManager(QObject *parent)
     : QObject(parent),
       m_udpSocket(new QUdpSocket(this)),
+    m_serialPort(new QSerialPort(this)),
       m_isConnected(false),
       m_connectionStatusString("Disconnected")
 {
     // Register custom types for signal/slot connections if needed elsewhere
     qRegisterMetaType<QGeoCoordinate>("QGeoCoordinate");
+    qRegisterMetaType<std::optional<bool>>("std::optional<bool>");
+    qRegisterMetaType<COMMUNICATION_TYPE>("MavlinkManager::COMMUNICATION_TYPE");
 
     // Connect the socket's readyRead signal to our handler
     connect(m_udpSocket, &QUdpSocket::readyRead, this, &MavlinkManager::onUdpReadyRead);
@@ -49,33 +54,99 @@ void MavlinkManager::connectUdp(const QString& ip, quint16 port) {
 
     emit isConnectedChanged();
 }
+bool isSerialPort(const QString &filename) {
+    return filename.startsWith("ttyUSB") || filename.startsWith("ttyACM");
+}
+QStringList get_available_ports() {
+    //std::vector<std::string> ports;
+    QStringList ports;
 
-void MavlinkManager::connectFromSettings() {
-    disconnect();
-    // For a GCS, we bind to a local port to listen for incoming data from any vehicle.
-    if (!m_udpSocket->bind(QHostAddress::AnyIPv4, m_port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
-        QString error = QString("UDP Bind Failed: %1").arg(m_udpSocket->errorString());
-        qWarning() << error;
-        emit connectionFailed(error);
-        return;
+    // Directory where serial port files are located
+    const QString devDir = "/sys/class/tty";
+
+    QDir dir(devDir);
+
+    // Get the list of files in the directory
+    QStringList fileList = dir.entryList();
+
+    // Iterate through all files in the directory
+    for (const QString &entry : fileList) {
+        QString filePath = dir.absoluteFilePath(entry);
+        QFileInfo fileInfo(filePath);
+        if (isSerialPort(entry)) {
+            qDebug() << fileInfo;
+            std::string str = filePath.toStdString();
+            str.erase(0, 15);
+            ports << QString::fromStdString(str);
+        }
     }
-    // send_heartbeat();
+    return ports;
+}
+void MavlinkManager::connectFromSettings() {
+    if (m_communicationType == UDP) {
+        disconnect();
+        // For a GCS, we bind to a local port to listen for incoming data from any vehicle.
+        if (!m_udpSocket->bind(QHostAddress::AnyIPv4, m_port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+            QString error = QString("UDP Bind Failed: %1").arg(m_udpSocket->errorString());
+            qWarning() << error;
+            emit connectionFailed(error);
+            return;
+        }
+        // send_heartbeat();
 
-    m_isConnected = true;
-    m_connectionStatusString = QString("Listening on UDP Port %1").arg(m_port);
-    qInfo() << m_connectionStatusString;
-    // sendHeartbeat();
-    emit isConnectedChanged();
+        m_isConnected = true;
+        m_connectionStatusString = QString("Listening on UDP Port %1").arg(m_port);
+        qInfo() << m_connectionStatusString;
+        // sendHeartbeat();
+        emit isConnectedChanged();
+    }else {
+        disconnect();
+
+        m_serialPort->setPortName(m_serialPortName);
+        m_serialPort->setBaudRate(m_baudrate);
+        m_serialPort->setDataBits(QSerialPort::Data8);
+        m_serialPort->setParity(QSerialPort::NoParity);
+        m_serialPort->setStopBits(QSerialPort::OneStop);
+        m_serialPort->setFlowControl(QSerialPort::NoFlowControl);
+        m_serialPort->setReadBufferSize(280);
+        connect(m_serialPort, &QSerialPort::readyRead, this, &MavlinkManager::onSerialReadyRead);
+
+        if (!m_serialPort->open(QIODevice::ReadWrite)) {
+            qDebug() << "Failed to open serial port:" << m_serialPort->errorString();
+        } else {
+            qDebug() << "Serial port opened successfully.";
+        }
+
+        m_isConnected = true;
+        m_connectionStatusString = QString("Connected to Serial Port %1 at %2 baud").arg(m_host).arg(m_baudrate);
+        qInfo() << m_connectionStatusString;
+        emit isConnectedChanged();
+    }
 }
 
+
+
 void MavlinkManager::disconnect() {
-    if (m_isConnected) {
+    if (m_communicationType == UDP && m_isConnected) {
         m_udpSocket->close();
         m_isConnected = false;
         m_connectionStatusString = "Disconnected";
         m_vehicleEndpoints.clear();
         qInfo() << "UDP socket disconnected.";
         emit isConnectedChanged();
+    }
+    if (m_communicationType == SERIAL) {
+        // Handle serial disconnection if implemented
+        if (m_serialPort && m_serialPort->isOpen()) {
+            m_serialPort->close();
+            m_isConnected = false;
+            m_connectionStatusString = "Disconnected";
+            m_vehicleEndpoints.clear();
+            qInfo() << "Serial port disconnected.";
+            emit isConnectedChanged();
+        } else {
+            qWarning() << "Serial port was not open or is null.";
+        }
     }
 }
 
@@ -93,6 +164,25 @@ void MavlinkManager::onUdpReadyRead() {
         sendHeartbeat(senderAddress, senderPort);
 
     }
+}
+
+void MavlinkManager::onSerialReadyRead() {
+    if (!m_serialPort || !m_serialPort->isOpen()) {
+        qDebug() << "Serial port is not open or is null.";
+        return;
+    }
+
+    if (m_serialPort->bytesAvailable() <= 0) {
+        //msleep(10); // Sleep briefly to prevent busy-waiting
+        // qDebug() << "aaskdjak";
+        return;
+    }
+    QByteArray data = m_serialPort->readAll();
+    if (data.isEmpty()) {
+        qDebug() << "Failed to read data from serial port.";
+        return;
+    }
+    parseMavlinkData(data, QHostAddress::LocalHost, 0); // Use LocalHost and port 0 for serial data
 }
 
 void MavlinkManager::sendHeartbeat(QHostAddress &address, quint16 port) {

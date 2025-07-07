@@ -6,12 +6,13 @@ import App.Context 1.0
 
 ApplicationWindow {
     id: settingsWindow
-    width: 500; height: 500
+    width: 500; height: 600
     visible: true
     title: qsTr("AvaSYS GCS Settings")
     background: Rectangle { color: "#1e1e1e" }
     property var teknofestClient: AppContext.teknofestClient
     property var mavlinkClient: AppContext.mavlinkManager
+    property var isSerialCommunication: true // Default to Serial Communication
 
     function saveSettings(){
         var url = serverUrlField.text.trim();
@@ -40,10 +41,29 @@ ApplicationWindow {
         }
         var mavlinkUrl = mavlinkUrlField.text.trim().split(':');
         console.log("MAVLink URL:", mavlinkUrl[0], mavlinkUrl[1]);
-        AppContext.mavlinkManager.setMavlinkSettings(
-            mavlinkUrl[0], // Protocol (e.g., "udp")
-            parseInt(mavlinkUrl[1]) // Port (e.g., "14550")
-        );
+
+
+
+        // check if url is port:baudrate or protocol:port
+        if (mavlinkUrl.length !== 2) {
+            console.error("Invalid MAVLink URL format. Expected format: 'protocol:port' or 'port:baudrate'");
+            return;
+        }
+        if (settingsWindow.mavlinkClient.communicationType === 0) {
+            // MAVLink UDP
+            AppContext.mavlinkManager.setMavlinkUdpSettings(
+                mavlinkUrl[0], // Protocol (e.g., "udp")
+                parseInt(mavlinkUrl[1]) // Port (e.g., "14550")
+            );
+        } else {
+            // MAVLink Serial
+            AppContext.mavlinkManager.setSerialPort(
+                mavlinkUrl[0] // Serial port (e.g., "/dev/ttyUSB0")
+            );
+            AppContext.mavlinkManager.setBaudrate(
+                parseInt(mavlinkUrl[1]) // Baudrate (e.g., "57600")
+            );
+        }
         console.log("Settings saved successfully. Saved data logs:");
         console.log("Username:", usernameField.text);
         console.log("Password :", passwordField.text);
@@ -109,6 +129,9 @@ ApplicationWindow {
             if (settingsWindow.teknofestClient !== AppContext.teknofestClient) {
                 settingsWindow.teknofestClient = AppContext.teknofestClient;
             }
+            if (settingsWindow.mavlinkClient !== AppContext.mavlinkManager) {
+                settingsWindow.mavlinkClient = AppContext.mavlinkManager;
+            }
         }
     }
 
@@ -164,6 +187,7 @@ ApplicationWindow {
             }
             ColumnLayout {
                 spacing: 10
+                id: mavlinkSettingsLayout
                 Label {
                     text: qsTr("MAVLink Settings")
                     font.bold: true
@@ -172,25 +196,60 @@ ApplicationWindow {
                 }
                 ColumnLayout {
                     spacing: 10
+
                     Label {
-                        text: qsTr("MAVLink UDP URL:")
+                        text: qsTr("MAVLink Communication Type:")
+                        color: "#A0A0A0"
+                        font.pixelSize: 14
+                    }
+                    TabBar {
+                        implicitWidth: mavlinkSettingsLayout.width
+                        id: mavlinkTabBar
+                        currentIndex: settingsWindow.mavlinkClient.communicationType
+                        onCurrentIndexChanged: {
+                            settingsWindow.mavlinkClient.set_comm_type_qml(currentIndex);
+                        }
+                        TabButton {
+                            text: qsTr("UDP")
+                            onClicked: {
+                                settingsWindow.mavlinkClient.set_comm_type_qml(0);
+                            }
+                        }
+                        TabButton {
+                            text: qsTr("Serial")
+                            onClicked: {
+                                settingsWindow.mavlinkClient.set_comm_type_qml(1);
+                            }
+                        }
+                    }
+
+                    Label {
+                        text: settingsWindow.mavlinkClient.communicationType === 0 ? qsTr("MAVLink UDP Settings") : qsTr("MAVLink Serial Settings")
                         color: "#A0A0A0"
                         font.pixelSize: 14
                     }
                     TextField {
                         id: mavlinkUrlField
-                        placeholderText: qsTr("MAVLink UDP URL")
-                        text: settingsWindow.mavlinkClient.host + ":" + settingsWindow.mavlinkClient.port // Placeholder for MAVLink URL
+                        placeholderText: settingsWindow.mavlinkClient.communicationType === 0 ? qsTr("MAVLink UDP URL (e.g., 127.0.0.1:14550)") : qsTr("MAVLink Serial Link with Baudrate (e.g., /dev/ttyUSB0:56700)")
+                        text: {
+                            if (settingsWindow.mavlinkClient.communicationType === 0) {
+                                // return udp
+                                return settingsWindow.mavlinkClient.host + ":" + settingsWindow.mavlinkClient.port;
+                            }else {
+                                // return serial
+                                return settingsWindow.mavlinkClient.serialPort + ":" + settingsWindow.mavlinkClient.baudrate;
+                            }
+                        }
                         Layout.fillWidth: true
                     }
                     Label {
-                        text: qsTr("MAVLink Video URL:")
+                        text: qsTr("Vehicle Video Port:")
                         color: "#A0A0A0"
                         font.pixelSize: 14
                     }
                     TextField {
                         id: mavlinkVideoUrlField
-                        placeholderText: qsTr("MAVLink Video URL")
+                        placeholderText: qsTr("MAVLink Video Port")
                         text: "11234" // Placeholder for video URL
                         Layout.fillWidth: true
                     }

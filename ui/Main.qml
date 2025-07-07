@@ -134,8 +134,8 @@ ApplicationWindow {
         VideoPanel {
             id: videoRect
             anchors {
-                right: parent.right
-                top: parent.top
+                left: parent.left
+                bottom: bottomPanel1.top
             }
         }
     }
